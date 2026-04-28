@@ -1,0 +1,5 @@
+Multiprocessing in Python allows you to utilize multiple CPU cores effectively.
+Unlike threading, which shares memory within a single process, multiprocessing creates separate Python processes with independent memory spaces.
+This approach is particularly useful for CPU-intensive tasks where true parallelism can provide significant performance improvements.
+The multiprocessing module provides tools like Process, Pool, and Queue for building concurrent applications.
+When using multiprocessing, data serialization and inter-process communication become important considerations.

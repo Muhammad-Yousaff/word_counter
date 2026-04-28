@@ -1,0 +1,29 @@
+{
+  "directory": "C:\\Users\\muham\\OneDrive\\Desktop\\office\\python",
+  "recursive": false,
+  "extensions": [
+    "txt"
+  ],
+  "total_files": 3,
+  "total_words": 212,
+  "total_bytes": 1768,
+  "total_size_human": "1.7 KB",
+  "elapsed_seconds": 0.4395301342010498,
+  "files": [
+    {
+      "file": "sample1.txt",
+      "words": 68,
+      "size": 547
+    },
+    {
+      "file": "sample2.txt",
+      "words": 70,
+      "size": 586
+    },
+    {
+      "file": "sample3.txt",
+      "words": 74,
+      "size": 635
+    }
+  ]
+}

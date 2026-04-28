@@ -1,0 +1,18 @@
+# Parallel File Word Counter - Requirements
+# This project uses only Python standard library modules
+# No external dependencies required!
+
+# Tested with:
+# - Python 3.6+
+# - Python 3.8 (recommended)
+# - Python 3.10+
+
+# Standard Library Modules Used:
+# - multiprocessing (concurrent processing)
+# - pathlib (file path operations)
+# - json (JSON I/O)
+# - argparse (command-line argument parsing)
+# - typing (type hints)
+# - time (performance timing)
+# - os (operating system functions)
+# - sys (system functions)

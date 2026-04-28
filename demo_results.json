@@ -1,0 +1,34 @@
+{
+  "directory": "C:\\Users\\muham\\OneDrive\\Desktop\\office\\python",
+  "recursive": false,
+  "extensions": [
+    "txt"
+  ],
+  "total_files": 4,
+  "total_words": 297,
+  "total_bytes": 2297,
+  "total_size_human": "2.2 KB",
+  "elapsed_seconds": 0.34211111068725586,
+  "files": [
+    {
+      "file": "requirements.txt",
+      "words": 85,
+      "size": 529
+    },
+    {
+      "file": "sample1.txt",
+      "words": 68,
+      "size": 547
+    },
+    {
+      "file": "sample2.txt",
+      "words": 70,
+      "size": 586
+    },
+    {
+      "file": "sample3.txt",
+      "words": 74,
+      "size": 635
+    }
+  ]
+}
