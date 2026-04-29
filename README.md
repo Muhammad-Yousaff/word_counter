@@ -1,6 +1,6 @@
 # Parallel File Word Counter 📊
 
-A high-performance command-line Python tool that counts words in all `.txt` files within a directory using **multiprocessing** for efficient parallel processing.
+A high-performance command-line Python tool that counts words in `.txt`, `.csv`, and `.pdf` files within a directory using **multiprocessing** for efficient parallel processing.
 
 ## Features
 
@@ -8,13 +8,15 @@ A high-performance command-line Python tool that counts words in all `.txt` file
 ✅ **Error Handling** - Gracefully handles file read errors and invalid inputs  
 ✅ **Efficient Output** - Sorted per-file counts + total word count with formatted numbers  
 ✅ **Smart Process Pool** - Automatically scales to available CPU cores  
+✅ **CSV Support** - Reads CSV cells and counts their text content  
+✅ **PDF Support** - Extracts text from PDFs with `pypdf`  
 ✅ **UTF-8 Support** - Handles various text encodings  
 
 ## Installation
 
 ### Requirements
 - Python 3.6+
-- No external dependencies (uses only standard library)
+- `pypdf` for PDF support
 
 ### Setup
 ```bash
@@ -38,7 +40,7 @@ python word_counter.py <directory_path>
 python word_counter.py .
 
 # Count words in a specific directory
-python word_counter.py /path/to/text/files
+python word_counter.py /path/to/files
 
 # Count words in relative directory
 python word_counter.py ./documents
@@ -49,8 +51,8 @@ python word_counter.py ./documents
 Processing 3 file(s) with 3 process(es)...
 ------------------------------------------------------------
 sample1.txt                                      68 words
-sample2.txt                                      70 words
-sample3.txt                                      74 words
+ sample2.csv                                      70 words
+ sample3.pdf                                      74 words
 ------------------------------------------------------------
 TOTAL                                           212 words
 ```
@@ -63,7 +65,7 @@ TOTAL                                           212 words
 ┌─────────────────────────────────────────────────┐
 │  Main Process                                   │
 │  • Parse command-line arguments                │
-│  • Discover all .txt files in directory        │
+│  • Discover supported files in directory       │
 │  • Create process pool                          │
 └──────────────┬──────────────────────────────────┘
                │
@@ -87,14 +89,15 @@ TOTAL                                           212 words
 
 1. **`count_words_in_file()`** - Worker function executed by each process
    - Reads a single file
+   - Uses format-aware extraction for text, CSV, and PDF files
    - Splits content and counts words
    - Returns filename and count tuple
    - Handles errors gracefully
 
-2. **`get_txt_files()`** - File discovery
+2. **`get_supported_files()`** - File discovery
    - Uses `pathlib.Path.glob()` for efficient file finding
    - Validates directory existence
-   - Returns list of all `.txt` files
+   - Returns list of all supported files (`.txt`, `.csv`, `.pdf`)
 
 3. **`main()`** - Orchestration
    - Initializes process pool (up to `cpu_count()`)
@@ -122,7 +125,7 @@ TOTAL                                           212 words
 
 The `word_counter_advanced.py` includes:
 - **Recursive directory scanning** (`-r` flag)
-- **Multiple file extensions** (e.g., `.md`, `.txt`, `.py`)
+- **Multiple file extensions** (including `.txt`, `.csv`, `.pdf`)
 - **Configurable process pool size**
 - **Timing statistics**
 - **Progress bar** (for visual feedback)
@@ -139,9 +142,16 @@ python word_counter_advanced.py . -r -e txt md py -o results.json
 |----------|----------|
 | Missing directory argument | Displays usage message and exits with code 1 |
 | Invalid directory path | Prints error message and exits with code 1 |
-| No `.txt` files found | Prints warning and exits gracefully |
+| No supported files found | Prints warning and exits gracefully |
 | File read error | Prints error to stderr, counts as 0 words, continues |
 | Encoding issues | Uses `errors='ignore'` to handle non-UTF-8 files |
+
+### PDF Support
+
+PDF files require `pypdf`:
+```bash
+pip install pypdf
+```
 
 ## Troubleshooting
 

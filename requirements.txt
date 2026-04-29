@@ -16,3 +16,6 @@
 # - time (performance timing)
 # - os (operating system functions)
 # - sys (system functions)
+
+# External dependency for PDF parsing:
+pypdf>=5.0.0

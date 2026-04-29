@@ -1,33 +1,48 @@
-#!/usr/bin/env python3
-"""
-Advanced Parallel File Word Counter
-
-An enhanced version with features like:
-- Recursive directory scanning
-- Multiple file extensions
-- Progress tracking
-- JSON output
-- Configurable process pool size
-
-Usage:
-    python word_counter_advanced.py <directory_path> [options]
-    
-Options:
-    -r, --recursive         Recursively scan subdirectories
-    -e, --extensions        File extensions to process (default: txt)
-    -p, --processes         Number of processes (default: auto)
-    -o, --output            Output to JSON file
-    -v, --verbose           Verbose output with timing stats
-"""
-
+ 
 import os
 import sys
 import json
 import time
 import argparse
+import csv
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
 from typing import Tuple, Dict, List
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+
+SUPPORTED_EXTENSIONS = ['txt', 'csv', 'pdf']
+
+
+def read_file_content(file_path: str) -> str:
+    file_path_obj = Path(file_path)
+    suffix = file_path_obj.suffix.lower()
+
+    if suffix == '.pdf':
+        if PdfReader is None:
+            raise ImportError(
+                'PDF support requires the pypdf package. Install it with: pip install pypdf'
+            )
+
+        reader = PdfReader(str(file_path_obj))
+        pages = []
+        for page in reader.pages:
+            pages.append(page.extract_text() or '')
+        return '\n'.join(pages)
+
+    if suffix == '.csv':
+        rows = []
+        with open(file_path, 'r', encoding='utf-8', errors='ignore', newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                rows.append(' '.join(cell.strip() for cell in row if cell.strip()))
+        return '\n'.join(rows)
+
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        return f.read()
 
 
 def count_words_in_file(file_path: str) -> Tuple[str, int, int]:
@@ -42,9 +57,8 @@ def count_words_in_file(file_path: str) -> Tuple[str, int, int]:
     """
     try:
         file_path_obj = Path(file_path)
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-            word_count = len(content.split())
+        content = read_file_content(file_path)
+        word_count = len(content.split())
         file_size = file_path_obj.stat().st_size
         return (str(file_path_obj), word_count, file_size)
     except Exception as e:
@@ -52,22 +66,30 @@ def count_words_in_file(file_path: str) -> Tuple[str, int, int]:
         return (str(file_path), 0, 0)
 
 
-def get_files_by_extension(directory: str, extensions: List[str], 
+def get_files_by_extension(path_input: str, extensions: List[str], 
                            recursive: bool = False) -> List[str]:
     """
     Get all files with specified extensions in a directory.
     
     Args:
-        directory: Path to the directory
+        path_input: Path to the directory or a single file
         extensions: List of file extensions (without dots)
         recursive: Whether to search subdirectories
         
     Returns:
         List of absolute file paths
     """
-    path = Path(directory)
+    path = Path(path_input)
+
+    if path.is_file():
+        if path.suffix.lstrip('.').lower() not in extensions:
+            extensions_str = ', '.join(f'.{e}' for e in extensions)
+            print(f"No files with extensions {extensions_str} found at '{path_input}'", file=sys.stderr)
+            return []
+        return [str(path)]
+
     if not path.is_dir():
-        raise NotADirectoryError(f"'{directory}' is not a valid directory")
+        raise NotADirectoryError(f"'{path_input}' is not a valid directory or supported file")
     
     files = []
     for ext in extensions:
@@ -76,7 +98,7 @@ def get_files_by_extension(directory: str, extensions: List[str],
     
     if not files:
         extensions_str = ', '.join(f'.{e}' for e in extensions)
-        print(f"No files with extensions {extensions_str} found in '{directory}'", 
+        print(f"No files with extensions {extensions_str} found in '{path_input}'", 
               file=sys.stderr)
         return []
     
@@ -98,11 +120,11 @@ def main():
         description='Count words in files using multiprocessing',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('directory', help='Directory to process')
+    parser.add_argument('path', help='Directory or file to process')
     parser.add_argument('-r', '--recursive', action='store_true',
                         help='Recursively scan subdirectories')
-    parser.add_argument('-e', '--extensions', nargs='+', default=['txt'],
-                        help='File extensions to process (default: txt)')
+    parser.add_argument('-e', '--extensions', nargs='+', default=SUPPORTED_EXTENSIONS,
+                        help='File extensions to process (default: txt csv pdf)')
     parser.add_argument('-p', '--processes', type=int, default=None,
                         help='Number of processes (default: auto)')
     parser.add_argument('-o', '--output', help='Output results to JSON file')
@@ -116,7 +138,7 @@ def main():
     
     # Get all files
     try:
-        files = get_files_by_extension(args.directory, extensions, args.recursive)
+        files = get_files_by_extension(args.path, extensions, args.recursive)
     except NotADirectoryError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -182,7 +204,7 @@ def main():
     # JSON output
     if args.output:
         output_data = {
-            'directory': str(Path(args.directory).resolve()),
+            'input_path': str(Path(args.path).resolve()),
             'recursive': args.recursive,
             'extensions': extensions,
             'total_files': len(files),

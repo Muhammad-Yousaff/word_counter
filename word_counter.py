@@ -1,61 +1,74 @@
-#!/usr/bin/env python3
-"""
-Parallel File Word Counter
-
-A command-line tool that counts words in all .txt files within a directory
-using multiprocessing for efficient parallel processing.
-
-Usage:
-    python word_counter.py <directory_path>
-"""
+ 
 
 import os
 import sys
+import csv
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
 from typing import Tuple
 
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+
+SUPPORTED_EXTENSIONS = ('.txt', '.csv', '.pdf')
+
+
+def read_file_content(file_path: str) -> str:
+    file_path_obj = Path(file_path)
+    suffix = file_path_obj.suffix.lower()
+
+    if suffix == '.pdf':
+        if PdfReader is None:
+            raise ImportError(
+                'PDF support requires the pypdf package. Install it with: pip install pypdf'
+            )
+
+        reader = PdfReader(str(file_path_obj))
+        pages = []
+        for page in reader.pages:
+            pages.append(page.extract_text() or '')
+        return '\n'.join(pages)
+
+    if suffix == '.csv':
+        rows = []
+        with open(file_path, 'r', encoding='utf-8', errors='ignore', newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                rows.append(' '.join(cell.strip() for cell in row if cell.strip()))
+        return '\n'.join(rows)
+
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        return f.read()
+
 
 def count_words_in_file(file_path: str) -> Tuple[str, int]:
-    """
-    Count the number of words in a single file.
-    
-    Args:
-        file_path: Path to the text file
-        
-    Returns:
-        Tuple of (filename, word_count)
-    """
+     
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-            word_count = len(content.split())
+        content = read_file_content(file_path)
+        word_count = len(content.split())
         return (os.path.basename(file_path), word_count)
     except Exception as e:
         print(f"Error reading {file_path}: {e}", file=sys.stderr)
         return (os.path.basename(file_path), 0)
 
 
-def get_txt_files(directory: str) -> list:
-    """
-    Get all .txt files in a directory.
-    
-    Args:
-        directory: Path to the directory
-        
-    Returns:
-        List of absolute file paths
-    """
+def get_supported_files(directory: str) -> list:
     path = Path(directory)
     if not path.is_dir():
         raise NotADirectoryError(f"'{directory}' is not a valid directory")
     
-    txt_files = list(path.glob('*.txt'))
-    if not txt_files:
-        print(f"No .txt files found in '{directory}'", file=sys.stderr)
+    files = []
+    for extension in SUPPORTED_EXTENSIONS:
+        files.extend(path.glob(f'*{extension}'))
+
+    if not files:
+        extensions_text = ', '.join(SUPPORTED_EXTENSIONS)
+        print(f"No supported files ({extensions_text}) found in '{directory}'", file=sys.stderr)
         return []
     
-    return [str(f) for f in txt_files]
+    return [str(f) for f in sorted(files)]
 
 
 def main():
@@ -66,18 +79,16 @@ def main():
         sys.exit(1)
     
     directory = sys.argv[1]
-    
-    # Get all .txt files
+ 
     try:
-        txt_files = get_txt_files(directory)
+        txt_files = get_supported_files(directory)
     except NotADirectoryError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     
     if not txt_files:
         sys.exit(0)
-    
-    # Determine number of processes
+     
     num_processes = min(cpu_count(), len(txt_files))
     
     print(f"Processing {len(txt_files)} file(s) with {num_processes} process(es)...")
@@ -86,14 +97,12 @@ def main():
     # Process files in parallel
     with Pool(processes=num_processes) as pool:
         results = pool.map(count_words_in_file, txt_files)
-    
-    # Display per-file results
+  
     total_words = 0
     for filename, word_count in sorted(results):
         print(f"{filename:<40} {word_count:>10,} words")
         total_words += word_count
-    
-    # Display total
+   
     print("-" * 60)
     print(f"{'TOTAL':<40} {total_words:>10,} words")
 
